@@ -1,55 +1,55 @@
-# MovieGraph — Movie Recommendation System (Neo4j + FastAPI)
+# MovieGraph — System rekomendacji filmów (Neo4j + FastAPI)
 
-A movie recommendation web app built on a **Neo4j** graph database with a
-**Python / FastAPI** backend and a server-rendered (Jinja2 + vanilla JS)
-frontend. It uses the **MovieLens "small"** dataset and demonstrates two kinds
-of recommendation directly in Cypher:
+Aplikacja webowa rekomendująca filmy, zbudowana na grafowej bazie **Neo4j**,
+backendzie w **Pythonie (FastAPI)** i widokach serwerowych (Jinja2 + vanilla JS,
+aplikacja typu MPA). Korzysta ze zbioru **MovieLens „small"** i pokazuje dwa
+typy rekomendacji realizowane bezpośrednio w języku Cypher:
 
-- **Collaborative filtering** — "users who rated this similarly also liked…"
-- **Content-based** — similar movies by shared genres and actors
+- **Kolaboracyjna** — „użytkownicy, którzy ocenili ten film podobnie, polubili też…"
+- **Treściowa** — podobne filmy po wspólnych gatunkach i aktorach
 
-> Academic documentation (UML diagrams, graph structure, deployment notes) is in
-> [`docs/dokumentacja.md`](docs/dokumentacja.md) (in Polish).
-
----
-
-## Features
-
-| Feature | Where |
-| --- | --- |
-| Browse movies, filter by genre and year | `GET /movies` |
-| Search by title | `GET /movies?q=...` |
-| Movie detail: cast, director, genres, average rating | `GET /movies/{id}` |
-| Collaborative-filtering recommendations | movie detail + `GET /api/recommendations/{user_id}` |
-| Content-based recommendations (genre + actors) | movie detail |
-| Simple user selection (dropdown, no auth) for personalization | top bar |
-| Rate a movie | `POST /api/rate` |
-| Visual subgraph (d3.js) | `GET /graph` + `GET /api/graph/{movie_id}` |
+> Pełna dokumentacja akademicka (diagramy UML, struktura grafu, wdrożenie) jest
+> w [`docs/dokumentacja.md`](docs/dokumentacja.md).
 
 ---
 
-## Graph schema
+## Funkcjonalności
 
-**Nodes**
-
-| Label | Properties |
+| Funkcjonalność | Gdzie |
 | --- | --- |
-| `Movie` | `id` (int, unique), `title`, `year`, `plot` |
-| `Person` | `id` (string, unique), `name` — actors and directors |
-| `Genre` | `name` (unique) |
-| `User` | `id` (int, unique), `name` |
+| Przeglądanie filmów, filtrowanie po gatunku i roku | `GET /movies` |
+| Wyszukiwanie po tytule | `GET /movies?q=...` |
+| Szczegóły filmu: obsada, reżyser, gatunki, średnia ocena | `GET /movies/{id}` |
+| Rekomendacje kolaboracyjne | strona szczegółów + `GET /api/recommendations/{user_id}` |
+| Rekomendacje treściowe (gatunki + aktorzy) | strona szczegółów |
+| Prosty wybór użytkownika (dropdown, bez logowania) — personalizacja | górny pasek |
+| Ocenianie filmu | `POST /api/rate` |
+| Wizualizacja podgrafu (d3.js) | `GET /graph` + `GET /api/graph/{movie_id}` |
 
-**Relationships**
+---
 
-| Pattern | Properties |
+## Schemat grafu
+
+**Węzły**
+
+| Etykieta | Właściwości |
+| --- | --- |
+| `Movie` | `id` (int, unikalne), `title`, `year`, `plot` |
+| `Person` | `id` (string, unikalne), `name` — aktorzy i reżyserzy |
+| `Genre` | `name` (unikalne) |
+| `User` | `id` (int, unikalne), `name` |
+
+**Relacje**
+
+| Wzorzec | Właściwości |
 | --- | --- |
 | `(User)-[:RATED]->(Movie)` | `rating` (float 0.5–5.0), `timestamp` |
 | `(Movie)-[:IN_GENRE]->(Genre)` | — |
 | `(Person)-[:ACTED_IN]->(Movie)` | — |
 | `(Person)-[:DIRECTED]->(Movie)` | — |
 
-**Constraints** (created by the seed script — they also add the indexes that
-make `MERGE` fast):
+**Ograniczenia (constraints)** — gwarantują unikalność kluczy i jednocześnie
+tworzą indeksy, dzięki czemu `MERGE` przy ładowaniu danych jest szybki:
 
 ```cypher
 CREATE CONSTRAINT movie_id   IF NOT EXISTS FOR (m:Movie)  REQUIRE m.id IS UNIQUE;
@@ -65,89 +65,91 @@ CREATE CONSTRAINT user_id    IF NOT EXISTS FOR (u:User)   REQUIRE u.id IS UNIQUE
                  (Person)         (Person)
 ```
 
-> **Data note.** MovieLens "small" contains movies, genres and ratings only — it
-> has **no cast, director or plot**. `Person` nodes and `ACTED_IN`/`DIRECTED`
-> relationships (and `Movie.plot`) are added by an **optional** enrichment step
-> using the free [TMDB](https://www.themoviedb.org/) API (see below). Without a
-> TMDB key the app still works fully for browse, search, detail (genres +
-> average rating), collaborative filtering and content-based-by-genre; only the
-> actor-based part of content-based recs needs the enrichment.
+> **Uwaga o danych.** MovieLens „small" zawiera tylko filmy, gatunki i oceny —
+> **nie ma obsady, reżyserów ani opisów**. Węzły `Person` oraz relacje
+> `ACTED_IN`/`DIRECTED` (i pole `Movie.plot`) dodaje **opcjonalny** krok
+> wzbogacania danych z darmowego API [TMDB](https://www.themoviedb.org/),
+> wykorzystując `tmdbId` z `links.csv`. Bez klucza TMDB aplikacja w pełni
+> działa dla przeglądania, wyszukiwania, szczegółów (gatunki + średnia ocena),
+> filtrowania kolaboracyjnego i treściowego po gatunkach; tylko część
+> rekomendacji treściowej oparta o aktorów potrzebuje wzbogacenia danych.
 
 ---
 
-## Setup
+## Instalacja i uruchomienie
 
-### 1. Start Neo4j
+### 1. Uruchom Neo4j
 
-**Option A — Docker (easiest):**
+**Opcja A — Docker (najprościej):**
 
 ```bash
 docker compose up -d
-# Browser UI at http://localhost:7474  (user: neo4j, password: password)
+# Panel: http://localhost:7474  (użytkownik: neo4j, hasło: password)
 ```
 
-**Option B — AuraDB / local install:** create a database and note its Bolt URI,
-user and password.
+**Opcja B — AuraDB / lokalna instalacja:** załóż bazę i zanotuj URI Bolt,
+użytkownika i hasło.
 
-### 2. Configure environment
+### 2. Konfiguracja środowiska
 
 ```bash
 cp .env.example .env
-# edit .env if your Neo4j URI / password differ
+# Edytuj .env, jeśli URI / hasło do Neo4j są inne
 ```
 
-`.env` keys:
+Klucze w `.env`:
 
 ```
 NEO4J_URI=bolt://localhost:7687
 NEO4J_USER=neo4j
 NEO4J_PASSWORD=password
 NEO4J_DATABASE=neo4j
-TMDB_API_KEY=            # optional, enables cast/director/plot
+TMDB_API_KEY=            # opcjonalne, włącza obsadę/reżyserów/opisy
 ```
 
-### 3. Install Python dependencies
+### 3. Instalacja zależności Pythona
 
 ```bash
-python3 -m venv venv          # if you don't already have one
+python3 -m venv venv          # jeśli jeszcze nie masz
 source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 4. Seed the database
+### 4. Załadowanie danych
 
-The seed script downloads the MovieLens "small" dataset automatically (into
-`./data/`) on first run, then loads it into Neo4j.
+Skrypt seed automatycznie pobiera zbiór MovieLens „small" (do `./data/`) przy
+pierwszym uruchomieniu, a następnie ładuje go do Neo4j.
 
 ```bash
-python -m seed.seed              # download (if needed) + load movies/ratings
-python -m seed.seed --reset      # wipe the graph first, then load
+python -m seed.seed              # pobierz (jeśli trzeba) + załaduj filmy/oceny
+python -m seed.seed --reset      # najpierw wyczyść graf, potem załaduj
 ```
 
-If you set `TMDB_API_KEY`, the same command also enriches movies with real
-cast, directors and plot (capped with `--enrich-limit`, default 500 movies to
-keep API usage reasonable):
+Jeśli ustawisz `TMDB_API_KEY`, ta sama komenda dodatkowo wzbogaci filmy o
+prawdziwą obsadę, reżyserów i opis (z limitem `--enrich-limit`, domyślnie 500
+filmów, żeby nie obciążać API):
 
 ```bash
 python -m seed.seed --enrich-limit 300
 ```
 
-### 5. Run the app
+### 5. Uruchomienie aplikacji
 
 ```bash
 uvicorn app.main:app --reload
-# open http://127.0.0.1:8000
+# otwórz http://127.0.0.1:8000
 ```
 
 ---
 
-## How the recommendations work (Cypher)
+## Jak działają rekomendacje (Cypher)
 
-All queries live in [`app/queries.py`](app/queries.py), each with a comment
-explaining it. The two recommendation cores:
+Wszystkie zapytania są w [`app/queries.py`](app/queries.py), każde z
+komentarzem. Dwa kluczowe zapytania rekomendacyjne:
 
-**User-based collaborative filtering** — find like-minded users, then recommend
-their highly-rated unseen movies, weighted by how like-minded each neighbour is:
+**Kolaboracyjne dla użytkownika** — znajdź podobnych użytkowników, potem
+poleć ich wysoko ocenione filmy, których dany użytkownik jeszcze nie widział,
+ważąc wynik tym, jak bardzo podobny jest każdy „sąsiad":
 
 ```cypher
 MATCH (u:User {id: $userId})-[r1:RATED]->(m:Movie)<-[r2:RATED]-(other:User)
@@ -160,8 +162,8 @@ RETURN rec.id, rec.title, sum(overlap * r3.rating) AS score
 ORDER BY score DESC LIMIT $limit
 ```
 
-**Content-based** — candidates that share a genre or actor, scored with each
-shared actor worth 3× a shared genre:
+**Treściowe** — kandydaci dzielący gatunek lub aktora, punktowani z wagą:
+każdy wspólny aktor = 3× wspólny gatunek:
 
 ```cypher
 MATCH (m:Movie {id: $id})
@@ -180,34 +182,34 @@ RETURN rec.id, rec.title, score ORDER BY score DESC LIMIT $limit
 
 ---
 
-## Project layout
+## Struktura projektu
 
 ```
 app/
-  main.py        FastAPI routes (pages + JSON API)
-  db.py          Neo4j driver + run_query helper
-  queries.py     all Cypher queries, documented
-  templates/     Jinja2 pages (base, index, movies, movie_detail, graph)
+  main.py        trasy FastAPI (strony + JSON API)
+  db.py          sterownik Neo4j + pomocnik run_query
+  queries.py     wszystkie zapytania Cypher z dokumentacją
+  templates/     widoki Jinja2 (base, index, movies, movie_detail, graph)
   static/        style.css, app.js, graph.js (d3)
 seed/
-  seed.py        downloads MovieLens + loads it into Neo4j
+  seed.py        pobiera MovieLens i ładuje do Neo4j
 docs/
-  dokumentacja.md  UML diagrams, schema, deployment (Polish)
-docker-compose.yml Neo4j for local dev
+  dokumentacja.md  diagramy UML, schemat, opis wdrożenia
+docker-compose.yml Neo4j do lokalnego developmentu
 requirements.txt
 .env.example
 ```
 
 ---
 
-## Endpoints reference
+## Lista endpointów
 
-| Method | Path | Returns |
+| Metoda | Ścieżka | Zwraca |
 | --- | --- | --- |
-| GET | `/` | Home, featured movies (+ recs if a user is selected) |
-| GET | `/movies` | Browse with `genre`, `year`, `q`, `page` filters |
-| GET | `/movies/{id}` | Movie detail + both recommendation sets |
-| GET | `/graph` | Subgraph visualization page (d3) |
-| GET | `/api/recommendations/{user_id}` | JSON: collaborative recs for a user |
-| GET | `/api/graph/{movie_id}` | JSON: node/link subgraph |
-| POST | `/api/rate` | Upsert a `RATED` relationship (JSON or form) |
+| GET | `/` | Strona główna, wyróżnione filmy (+ rekomendacje, jeśli wybrany użytkownik) |
+| GET | `/movies` | Przeglądanie z filtrami `genre`, `year`, `q`, `page` |
+| GET | `/movies/{id}` | Szczegóły filmu + obie listy rekomendacji |
+| GET | `/graph` | Strona z wizualizacją podgrafu (d3) |
+| GET | `/api/recommendations/{user_id}` | JSON: rekomendacje kolaboracyjne dla użytkownika |
+| GET | `/api/graph/{movie_id}` | JSON: podgraf w formacie węzły/krawędzie |
+| POST | `/api/rate` | Zapisuje/aktualizuje relację `RATED` (JSON lub formularz) |
