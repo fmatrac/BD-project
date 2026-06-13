@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% block title %}{{ movie.title }} · MovieGraph{% endblock %}
+{% block content %}
+
+<article class="detail">
+  <h2>{{ movie.title }} {% if movie.year %}<span class="year">({{ movie.year }})</span>{% endif %}</h2>
+
+  <div class="detail-meta">
+    {% if movie.avgRating %}<span class="rating">★ {{ '%.2f'|format(movie.avgRating) }}</span>{% endif %}
+    <span>{{ movie.numRatings }} ratings</span>
+  </div>
+
+  {% if movie.genres %}
+  <div class="chips">
+    {% for g in movie.genres %}
+      <a class="chip" href="/movies?genre={{ g }}{% if user_id %}&user_id={{ user_id }}{% endif %}">{{ g }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  {% if movie.plot %}<p class="plot">{{ movie.plot }}</p>{% endif %}
+
+  <div class="credits">
+    <div>
+      <h4>Director{{ 's' if movie.directors|length > 1 else '' }}</h4>
+      <p>{{ movie.directors|join(', ') if movie.directors else '—' }}</p>
+    </div>
+    <div>
+      <h4>Cast</h4>
+      <p>{{ movie.actors|join(', ') if movie.actors else '—' }}</p>
+    </div>
+  </div>
+
+  <p><a href="/graph?movie_id={{ movie.id }}{% if user_id %}&user_id={{ user_id }}{% endif %}">View this movie in the graph &rarr;</a></p>
+
+  <!-- Rate this movie (requires a selected user) -->
+  <div class="rate-box">
+    {% if user_id %}
+      <form method="post" action="/api/rate" class="rate-form">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <input type="hidden" name="movie_id" value="{{ movie.id }}">
+        <label>Your rating:</label>
+        <select name="rating">
+          {% for v in [0.5,1.0,1.5,2.0,2.5,3.0,3.5,4.0,4.5,5.0] %}
+            <option value="{{ v }}" {% if your_rating == v %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+        <button type="submit">{{ 'Update' if your_rating else 'Rate' }}</button>
+        {% if your_rating %}<span class="current">currently {{ your_rating }}</span>{% endif %}
+      </form>
+    {% else %}
+      <p class="hint">Select a user (top-right) to rate this movie.</p>
+    {% endif %}
+  </div>
+</article>
+
+<section>
+  <h3>Users who liked this also liked</h3>
+  <p class="hint">Collaborative filtering: people who rated this movie highly also
+     rated these highly.</p>
+  {% if collaborative %}
+  <div class="grid">
+    {% for m in collaborative %}
+      {% set badge = m.coRaters ~ ' co-raters' %}
+      {% include "_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}<p class="hint">Not enough ratings to compute this yet.</p>{% endif %}
+</section>
+
+<section>
+  <h3>Similar by genre & cast</h3>
+  <p class="hint">Content-based: movies sharing genres and actors (each shared
+     actor weighted 3× a shared genre).</p>
+  {% if content_based %}
+  <div class="grid">
+    {% for m in content_based %}
+      {% set badge = 'score ' ~ m.score %}
+      {% include "_card.html" %}
+    {% endfor %}
+  </div>
+  {% else %}<p class="hint">No content-based matches found.</p>{% endif %}
+</section>
+
+{% endblock %}

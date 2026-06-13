@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+{% block title %}Browse · MovieGraph{% endblock %}
+{% block content %}
+
+<h2>{% if q %}Search results for "{{ q }}"{% else %}Browse movies{% endif %}</h2>
+
+{% if not q %}
+<form class="filters" method="get" action="/movies">
+  <select name="genre">
+    <option value="">All genres</option>
+    {% for g in genres %}
+      <option value="{{ g }}" {% if selected_genre == g %}selected{% endif %}>{{ g }}</option>
+    {% endfor %}
+  </select>
+  <select name="year">
+    <option value="">All years</option>
+    {% for y in years %}
+      <option value="{{ y }}" {% if selected_year == y %}selected{% endif %}>{{ y }}</option>
+    {% endfor %}
+  </select>
+  {% if user_id %}<input type="hidden" name="user_id" value="{{ user_id }}">{% endif %}
+  <button type="submit">Filter</button>
+  <a class="clear" href="/movies{% if user_id %}?user_id={{ user_id }}{% endif %}">Clear</a>
+</form>
+{% endif %}
+
+{% if movies %}
+<div class="grid">
+  {% for m in movies %}
+    {% include "_card.html" %}
+  {% endfor %}
+</div>
+
+{% if not q %}
+<div class="pager">
+  {% if page > 1 %}
+    <a href="/movies?page={{ page - 1 }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if user_id %}&user_id={{ user_id }}{% endif %}">&larr; Prev</a>
+  {% endif %}
+  <span>Page {{ page }}</span>
+  {% if movies|length == 24 %}
+    <a href="/movies?page={{ page + 1 }}{% if selected_genre %}&genre={{ selected_genre }}{% endif %}{% if selected_year %}&year={{ selected_year }}{% endif %}{% if user_id %}&user_id={{ user_id }}{% endif %}">Next &rarr;</a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<p class="hint">No movies found.</p>
+{% endif %}
+
+{% endblock %}

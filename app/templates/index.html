@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Home · MovieGraph{% endblock %}
+{% block content %}
+
+{% if user_id and recommendations %}
+<section>
+  <h2>Recommended for you</h2>
+  <p class="hint">User-based collaborative filtering: movies liked by users whose
+     taste matches yours, that you haven't rated yet.</p>
+  <div class="grid">
+    {% for m in recommendations %}
+      {% set badge = 'score ' ~ ('%.0f'|format(m.score)) %}
+      {% include "_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+{% elif user_id %}
+<section>
+  <h2>Recommended for you</h2>
+  <p class="hint">No recommendations yet — rate a few movies and they'll appear here.</p>
+</section>
+{% else %}
+<section class="welcome">
+  <h2>Movie recommendations on a graph</h2>
+  <p>Pick a user in the top-right to get personalized recommendations, or just
+     browse. Everything is powered by a Neo4j graph of movies, people, genres
+     and ratings.</p>
+</section>
+{% endif %}
+
+<section>
+  <h2>Featured movies</h2>
+  <p class="hint">Highest average rating among movies with at least 50 ratings.</p>
+  <div class="grid">
+    {% for m in featured %}
+      {% include "_card.html" %}
+    {% endfor %}
+  </div>
+</section>
+
+{% endblock %}

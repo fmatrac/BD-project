@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Movie Recommender{% endblock %}</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="/{% if user_id %}?user_id={{ user_id }}{% endif %}">🎬 MovieGraph</a>
+  <nav>
+    <a href="/{% if user_id %}?user_id={{ user_id }}{% endif %}">Home</a>
+    <a href="/movies{% if user_id %}?user_id={{ user_id }}{% endif %}">Browse</a>
+    <a href="/graph{% if user_id %}?user_id={{ user_id }}{% endif %}">Graph</a>
+  </nav>
+
+  <form class="search" action="/movies" method="get">
+    <input type="text" name="q" placeholder="Search title..." value="{{ q or '' }}">
+    {% if user_id %}<input type="hidden" name="user_id" value="{{ user_id }}">{% endif %}
+    <button type="submit">Search</button>
+  </form>
+
+  <!-- Simple user selection (no auth): switching reloads with ?user_id, keeping
+       any other query params (filters, page) via setUser() in app.js. -->
+  <div class="userpick">
+    <label>Acting as:</label>
+    <select onchange="setUser(this.value)">
+      <option value="">— no user —</option>
+      {% for u in users %}
+        <option value="{{ u.id }}" {% if user_id == u.id %}selected{% endif %}>{{ u.name }}</option>
+      {% endfor %}
+    </select>
+  </div>
+</header>
+
+<main>
+  {% block content %}{% endblock %}
+</main>
+
+<footer class="foot">
+  <span>Neo4j + FastAPI movie recommendation demo · MovieLens small dataset</span>
+</footer>
+<script src="/static/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

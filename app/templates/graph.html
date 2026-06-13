@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Graph · MovieGraph{% endblock %}
+{% block content %}
+
+<h2>Graph view</h2>
+<p class="hint">A live subgraph around one movie: its genres, cast, directors and
+   a sample of users who rated it. Data comes from
+   <code>GET /api/graph/{movie_id}</code>. Drag nodes to rearrange.</p>
+
+<form class="filters" method="get" action="/graph">
+  <label>Movie id:</label>
+  <input type="number" name="movie_id" value="{{ movie_id }}">
+  {% if user_id %}<input type="hidden" name="user_id" value="{{ user_id }}">{% endif %}
+  <button type="submit">Load</button>
+</form>
+
+<div class="legend">
+  <span class="dot Movie"></span>Movie
+  <span class="dot Genre"></span>Genre
+  <span class="dot Actor"></span>Actor
+  <span class="dot Director"></span>Director
+  <span class="dot User"></span>User
+</div>
+
+<div id="graph" data-movie-id="{{ movie_id }}"></div>
+
+{% endblock %}
+{% block scripts %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script src="/static/graph.js"></script>
+{% endblock %}

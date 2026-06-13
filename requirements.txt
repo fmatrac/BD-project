@@ -1,0 +1,14 @@
+# Web framework + ASGI server
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# Templating and form parsing
+jinja2==3.1.5
+python-multipart==0.0.20
+
+# Neo4j official driver
+neo4j==5.27.0
+
+# Config + optional dataset download / TMDB enrichment
+python-dotenv==1.0.1
+requests==2.32.3

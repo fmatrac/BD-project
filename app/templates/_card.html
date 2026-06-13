@@ -1,0 +1,11 @@
+{# Reusable movie card. Expects `m` (dict with id, title, year, avgRating) and
+   optional `user_id` so links keep the active user. Optional `badge` text. #}
+<a class="card" href="/movies/{{ m.id }}{% if user_id %}?user_id={{ user_id }}{% endif %}">
+  <div class="card-title">{{ m.title }}</div>
+  <div class="card-meta">
+    {% if m.year %}<span>{{ m.year }}</span>{% endif %}
+    {% if m.avgRating %}<span>★ {{ '%.2f'|format(m.avgRating) }}</span>{% endif %}
+    {% if m.numRatings %}<span>{{ m.numRatings }} ratings</span>{% endif %}
+  </div>
+  {% if badge %}<div class="card-badge">{{ badge }}</div>{% endif %}
+</a>
